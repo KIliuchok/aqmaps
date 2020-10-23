@@ -9,15 +9,18 @@ import java.util.*;
 
 public class App 
 {
-	private static final String urlString = "https:/localhost:80/maps/2020/01/03/air-quality-data.json";
 	
     public static void main( String[] args )
     {
+    	
+    	final String urlString = "http://localhost:" + args[3] + "/maps/" + args[2] + "/" + args[0] + "/" + args[1] + "/air-quality-data.json";
+    	
         String string = NetworkRead.readNetworkToString(urlString);
-        
+        System.out.println(string);
         Type listType = new TypeToken<ArrayList<AirQualityEntry>>() {}.getType();
         ArrayList<AirQualityEntry> listOfEntries = new Gson().fromJson(string, listType);
         
         System.out.println(listOfEntries.size());
+        System.out.print(listOfEntries.get(1).location);
     }
 }

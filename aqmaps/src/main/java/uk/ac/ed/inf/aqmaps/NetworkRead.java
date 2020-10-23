@@ -19,7 +19,8 @@ public class NetworkRead {
 				System.out.println("Network Error: " + response.statusCode());
 				System.exit(69);
 			} else {
-				output = response.toString();
+				output = response.body();
+				System.out.println("Object was read");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
