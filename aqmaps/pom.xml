@@ -71,7 +71,7 @@
           	<archive>
           		<index>true</index>
           		<manifest>
-          			<mainClass>uk.ac.ed.inf.heatmap.App</mainClass>
+          			<mainClass>uk.ac.ed.inf.aqmaps.App</mainClass>
           		</manifest>
           	</archive>
           </configuration>
