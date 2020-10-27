@@ -51,7 +51,7 @@ public class App
         
         // USE TURF TO CHECK IF IT IS INSIDE THE POLYGON
         
-        turf.inside(point, noFlyAreas.features().get(0));
+        TurfJoins.inside(point, (Polygon)noFlyAreas.features().get(0).geometry());
         
     }
 }
