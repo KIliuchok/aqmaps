@@ -4,10 +4,10 @@ public class Vertex {
 
 	final private String id;
 	final private String name;
-	final private double longitude;
-	final private double latitude;
+	final public double longitude;
+	final public double latitude;
 	
-	public Vertex(double latitude, double longitude) {
+	public Vertex(double longitude, double latitude) {
 		this.id = latitude + "," + longitude;
 		this.name = latitude + "." + longitude;
 		this.longitude = longitude;

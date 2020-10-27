@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import com.mapbox.turf.*;
 
+
 import java.util.*;
 
 public class App 
@@ -36,22 +37,51 @@ public class App
         	entry.lng = Words.coordinates.lng;        	
         }
         
-       List<Vertex> vertices = new LinkedList<Vertex>();
+       List<Vertex> vertices = new ArrayList<Vertex>();
+       List<Doubles> test = new ArrayList<Doubles>();
+       int k = 0;
+        for (double i = 55.942617; i < 55.946233; i += 0.000001 ) {
+        	for (double j = 3.184319; j < 3.192473; j += 0.000001) {
+        		test.add(new Doubles(i,-j));
+        		
+        	} 
+        	
+        	System.out.println(" Row " + k);
+        	k ++;
+        }
         
-        for (double i = northWest.latitude(); i < northEast.latitude(); i += 0.000001 ) {
-        	for (double j = northWest.longitude(); j < southEast.longitude(); j += 0.000001) {
-        		var vertex = new Vertex(i,j);
-        		vertices.add(vertex);
+        for (Doubles double1 : test) {
+        	for (Feature feature : noFlyAreas.features()) {
+        		if (TurfJoins.inside(Point.fromLngLat(double1.secondTerm, double1.firstTerm), (Polygon)feature.geometry())) {
+        			System.out.println("Removed " + double1.secondTerm + " " + double1.firstTerm );
+        			test.remove(double1);
+        		}
         	}
         }
         
+        for (Vertex vertex : vertices) {
+        	System.out.print("Vertices");
+        	System.out.println(vertex.latitude + "," + vertex.longitude);
+        }
         
-        var point = Point.fromLngLat(50, 8);
+        for (Vertex vertex : vertices) {
+        	for (Feature feature : noFlyAreas.features()) {
+        		if (TurfJoins.inside(Point.fromLngLat(vertex.longitude, vertex.latitude), (Polygon)feature.geometry())) {
+        			System.out.println("Removed " + vertex.latitude + "," + vertex.longitude);
+        			vertices.remove(vertex.getId());
+        		}
+        	}
+        }
+        
+        var point = Point.fromLngLat(-3.1866, 55.9445);
+        var point2 = Point.fromLngLat(-3.1874, 55.9444);
         
         
         // USE TURF TO CHECK IF IT IS INSIDE THE POLYGON
-        
-        TurfJoins.inside(point, (Polygon)noFlyAreas.features().get(0).geometry());
+        for (Feature feature : noFlyAreas.features()) {
+        	System.out.println("It is inside (1): " + feature.getProperty("name") + TurfJoins.inside(point, (Polygon)feature.geometry()));
+            System.out.println("It is inside (2): " + feature.getProperty("name") + TurfJoins.inside(point2, (Polygon)feature.geometry()));
+        }
         
     }
 }
