@@ -37,13 +37,14 @@ public class App
         	entry.lng = Words.coordinates.lng;        	
         }
         
-       List<Vertex> vertices = new ArrayList<Vertex>();
+       List<Vertex> vertices = new LinkedList<Vertex>();
        List<Doubles> test = new ArrayList<Doubles>();
        int k = 0;
-        for (double i = 55.942617; i < 55.946233; i += 0.000001 ) {
-        	for (double j = 3.184319; j < 3.192473; j += 0.000001) {
-        		test.add(new Doubles(i,-j));
+        for (double i = 55.942617; i < 55.946233; i += 0.0001 ) {
+        	for (double j = 3.184319; j < 3.192473; j += 0.0001) {
         		
+        		var temp1 = new Vertex(-j, i);
+        		vertices.add(temp1);        		
         	} 
         	
         	System.out.println(" Row " + k);
@@ -59,19 +60,18 @@ public class App
         	}
         }
         
-        for (Vertex vertex : vertices) {
-        	System.out.print("Vertices");
-        	System.out.println(vertex.latitude + "," + vertex.longitude);
-        }
+        List<Vertex> toRemove = new ArrayList();
         
         for (Vertex vertex : vertices) {
         	for (Feature feature : noFlyAreas.features()) {
         		if (TurfJoins.inside(Point.fromLngLat(vertex.longitude, vertex.latitude), (Polygon)feature.geometry())) {
         			System.out.println("Removed " + vertex.latitude + "," + vertex.longitude);
-        			vertices.remove(vertex.getId());
+        			toRemove.add(vertex);
         		}
         	}
         }
+        
+        vertices.removeAll(toRemove);
         
         var point = Point.fromLngLat(-3.1866, 55.9445);
         var point2 = Point.fromLngLat(-3.1874, 55.9444);
