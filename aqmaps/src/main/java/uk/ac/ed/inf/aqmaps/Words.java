@@ -2,18 +2,19 @@ package uk.ac.ed.inf.aqmaps;
 
 public class Words {
 		String country;
-		Square square;
-		public static class Square{
-			String squareName;
-			Coordinates squareCoordinates;
-		}
+		Square square;		
 		String nearestPlace;
-		Coordinates coordinates;		
+		Coordinates coordinates;				
+		String words;
+		String language;
+		String webMap;	
+		
 		public static class Coordinates{
 			String lat;
 			String lng;
 		}
-		String words;
-		String language;
-		String webMap;		
+		public static class Square{
+			String squareName;
+			Coordinates squareCoordinates;
+		}
 }

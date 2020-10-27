@@ -4,6 +4,7 @@ import com.mapbox.geojson.*;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+import com.mapbox.turf.*;
 
 import java.util.*;
 
@@ -35,13 +36,22 @@ public class App
         	entry.lng = Words.coordinates.lng;        	
         }
         
+       List<Vertex> vertices = new LinkedList<Vertex>();
+        
+        for (double i = northWest.latitude(); i < northEast.latitude(); i += 0.000001 ) {
+        	for (double j = northWest.longitude(); j < southEast.longitude(); j += 0.000001) {
+        		var vertex = new Vertex(i,j);
+        		vertices.add(vertex);
+        	}
+        }
         
         
+        var point = Point.fromLngLat(50, 8);
         
         
+        // USE TURF TO CHECK IF IT IS INSIDE THE POLYGON
         
-        
-        
+        turf.inside(point, noFlyAreas.features().get(0));
         
     }
 }
