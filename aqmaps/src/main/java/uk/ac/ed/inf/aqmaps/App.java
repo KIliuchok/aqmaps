@@ -10,17 +10,38 @@ import java.util.*;
 public class App 
 {
 	
+	public static final Point northWest = Point.fromLngLat(-3.192473, 55.946233);
+	public static final Point northEast = Point.fromLngLat(-3.184319, 55.946233);
+	public static final Point southEast = Point.fromLngLat(-3.184319, 55.942617);
+	public static final Point southWest = Point.fromLngLat(-3.192473, 55.942617);
+	
     public static void main( String[] args )
     {
-    	
-    	final String urlString = "http://localhost:" + args[3] + "/maps/" + args[2] + "/" + args[0] + "/" + args[1] + "/air-quality-data.json";
-    	
-        String string = NetworkRead.readNetworkToString(urlString);
-        System.out.println(string);
+    	final Point startingPoint = Point.fromLngLat(Double.parseDouble(args[5]), Double.parseDouble(args[4]));
+    	double move = 0.0003;		
+    			
+    	String urlStringForPoints = "http://localhost:" + args[3] + "/maps/" + args[2] + "/" + args[0] + "/" + args[1] + "/air-quality-data.json";    	
+      
         Type listType = new TypeToken<ArrayList<AirQualityEntry>>() {}.getType();
-        ArrayList<AirQualityEntry> listOfEntries = new Gson().fromJson(string, listType);
+        ArrayList<AirQualityEntry> listOfEntries = new Gson().fromJson(NetworkRead.readNetworkToString(urlStringForPoints), listType);
         
-        System.out.println(listOfEntries.size());
-        System.out.print(listOfEntries.get(1).location);
+        String urlStringNoFly = "http://localhost:" + args[3] + "/buildings/no-fly-zones.geojson";
+        var noFlyAreas = FeatureCollection.fromJson(NetworkRead.readNetworkToString(urlStringNoFly)); 
+       
+        for (AirQualityEntry entry : listOfEntries) {
+        	String str[] = entry.location.split("\\.");
+        	var Words = new Gson().fromJson(NetworkRead.readNetworkToString("http://localhost:" + args[3] + "/words/" + str[0] + "/" + str[1] + "/" + str[2] + "/details.json"), Words.class);
+        	entry.lat = Words.coordinates.lat;
+        	entry.lng = Words.coordinates.lng;        	
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
     }
 }
