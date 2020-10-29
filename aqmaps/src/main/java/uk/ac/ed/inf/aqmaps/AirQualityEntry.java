@@ -10,4 +10,9 @@ public class AirQualityEntry {
 	String lat;
 	String lng;
 	Boolean visited;
+	
+	public AirQualityEntry (Point point) {
+		this.lat = String.valueOf(point.latitude());
+		this.lng = String.valueOf(point.longitude());
+	}
 }
