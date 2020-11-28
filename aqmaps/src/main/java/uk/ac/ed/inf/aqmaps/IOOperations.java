@@ -16,8 +16,8 @@ public class IOOperations {
     	file.close();
 	}
 	
-	public static void writeFile(List<Move> list) throws Exception {
-		FileWriter fw = new FileWriter("flightpath-CHANGE-DATE.txt");
+	public static void writeMovesToFile(List<Move> list, String fileName) throws Exception {
+		FileWriter fw = new FileWriter(fileName);
 		for (Move move : list) {
 			fw.write(String.format("%d,%f,%f,%d,%f,%f,%s\n", move.moveId, move.beforeMove.lng, move.beforeMove.lat,  move.direction, move.afterMove.lng, move.afterMove.lat, move.location));
 		}

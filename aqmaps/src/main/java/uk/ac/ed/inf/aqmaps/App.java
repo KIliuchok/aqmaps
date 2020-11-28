@@ -31,35 +31,38 @@ public class App
 		return false;
 	}
 	
-	public static boolean isLineInPoly(Detail detail, Feature feature) {
-		for (int to = 1; to < 100; to++) {
-			double move1 = 0.000003*to;
-			
-			if (detail.direction >= 0 && detail.direction <= 90) {
-				var yolo = Point.fromLngLat(detail.startingPoint.longitude() + move1*Math.sin(detail.direction), detail.startingPoint.latitude() + move1*Math.cos(detail.direction));
-				if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
-					return true;					
+	
+	// Check if the line from startingPoint towards a certain direction is inside any of the polygons of the Feature Collection fc
+	public static boolean isLineInFC(Point startingPoint, FeatureCollection fc, int direction) {
+		for (int j = 1; j < 100; j++) {
+			double move1 = 0.000003*j;	
+			for (Feature feature: fc.features()) {
+					if (direction >= 0 && direction <= 90) {
+						var yolo = Point.fromLngLat(startingPoint.longitude() + move1*Math.cos(direction), startingPoint.latitude() + move1*Math.sin(direction));
+						if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
+							return true;					
+						}
+					}
+					if (direction >= 100 && direction <= 180) {
+						var yolo = Point.fromLngLat(startingPoint.longitude() - move1*Math.cos(direction), startingPoint.latitude() + move1*Math.sin(direction));
+						if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
+							return true;					
+						}
+					}
+					if (direction >= 190 && direction <= 270) {
+						var yolo = Point.fromLngLat(startingPoint.longitude() - move1*Math.cos(direction), startingPoint.latitude() - move1*Math.sin(direction));
+						if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
+							return true;					
+						}
+					}
+					if (direction >= 280 && direction <= 350) {
+						var yolo = Point.fromLngLat(startingPoint.longitude() + move1*Math.cos(direction), startingPoint.latitude() - move1*Math.sin(direction));
+						if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
+							return true;					
+						}
+					}
 				}
-			}
-			if (detail.direction >= 100 && detail.direction <= 180) {
-				var yolo = Point.fromLngLat(detail.startingPoint.longitude() - move1*Math.sin(detail.direction), detail.startingPoint.latitude() + move1*Math.cos(detail.direction));
-				if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
-					return true;				
-				}
-			}
-			if (detail.direction >= 190 && detail.direction <= 270) {
-				var yolo = Point.fromLngLat(detail.startingPoint.longitude() - move1*Math.sin(detail.direction), detail.startingPoint.latitude() - move1*Math.cos(detail.direction));
-				if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
-					return true;					
-				}
-			}
-			if (detail.direction >= 280 && detail.direction <= 350) {
-				var yolo = Point.fromLngLat(detail.startingPoint.longitude() + move1*Math.sin(detail.direction), detail.startingPoint.latitude() - move1*Math.cos(detail.direction));
-				if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
-					return true;					
-				}
-			}
-		}	
+			}	
 		return false;
 	}
 	
@@ -105,11 +108,11 @@ public class App
 		return feature;
 	}
 	
-	public static final Point northWest = Point.fromLngLat(-3.192473, 55.946233);
-	public static final Point northEast = Point.fromLngLat(-3.184319, 55.946233);
-	public static final Point southEast = Point.fromLngLat(-3.184319, 55.942617);
-	public static final Point southWest = Point.fromLngLat(-3.192473, 55.942617);
-	public static final double move = 0.0003;
+	private static final Point northWest = Point.fromLngLat(-3.192473, 55.946233);
+	private static final Point northEast = Point.fromLngLat(-3.184319, 55.946233);
+	private static final Point southEast = Point.fromLngLat(-3.184319, 55.942617);
+	private static final Point southWest = Point.fromLngLat(-3.192473, 55.942617);
+	private static final double move = 0.0003;
 	
 	public static double round(double value, int places) {
 	    if (places < 0) throw new IllegalArgumentException();
@@ -136,57 +139,42 @@ public class App
     	
     	Polygon workingArea = Polygon.fromLngLats(List.of(coo));
     	
-    	final Point startingPoint = Point.fromLngLat(Double.parseDouble(args[5]), Double.parseDouble(args[4]));
+    	final Point startingPoint = Point.fromLngLat(Double.parseDouble(args[4]), Double.parseDouble(args[3]));
     			
-    			
-    	String urlStringForPoints = "http://localhost:" + args[3] + "/maps/" + args[2] + "/" + args[0] + "/" + args[1] + "/air-quality-data.json";    	
-      
-        Type listType = new TypeToken<ArrayList<AirQualityEntry>>() {}.getType();
-        ArrayList<AirQualityEntry> listOfEntries = new Gson().fromJson(NetworkRead.readNetworkToString(urlStringForPoints), listType);
+    	// Read and store the sensors for the specific day in an array listOfEntries	
+    	String urlStringForPoints = "http://localhost:" + args[6] + "/maps/" + args[2] + "/" + args[1] + "/" + args[0] + "/air-quality-data.json";    	
+        Type listType = new TypeToken<ArrayList<SensorData>>() {}.getType();
+        ArrayList<SensorData> listOfEntries = new Gson().fromJson(NetworkRead.readNetworkToString(urlStringForPoints), listType);
         
-        
-        
-        
-        String urlStringNoFly = "http://localhost:" + args[3] + "/buildings/no-fly-zones.geojson";
+        // Read the no fly areas and store in collection noFlyAreas
+        String urlStringNoFly = "http://localhost:" + args[6] + "/buildings/no-fly-zones.geojson";
         var noFlyAreas = FeatureCollection.fromJson(NetworkRead.readNetworkToString(urlStringNoFly)); 
-       
         
-        var testing = Point.fromLngLat(-3.186300000, 55.944500000);
-    	
-    	for (Feature feature : noFlyAreas.features()) {
-    		System.out.println("Feature " + feature.properties());
-    		if (TurfJoins.inside(testing, (Polygon)feature.geometry())) {
-    			System.out.println("It is inside Poly");
-    			System.out.println();
-    			System.out.println();
-    		}
-    		
-    	}
-        
-        
-        
-        for (AirQualityEntry entry : listOfEntries) {
+        for (SensorData entry : listOfEntries) {
         	String str[] = entry.location.split("\\.");
-        	var Words = new Gson().fromJson(NetworkRead.readNetworkToString("http://localhost:" + args[3] + "/words/" + str[0] + "/" + str[1] + "/" + str[2] + "/details.json"), Words.class);
+        	var Words = new Gson().fromJson(NetworkRead.readNetworkToString("http://localhost:" + args[6] + "/words/" + str[0] + "/" + str[1] + "/" + str[2] + "/details.json"), Words.class);
         	entry.lat = Words.coordinates.lat;
         	entry.lng = Words.coordinates.lng;        	
         }
         
-       var last4Moves = new ArrayList<Move>();
+        // Define locally used variables
+        var last4Moves = new ArrayList<Move>(); 
+        var visitedPoints = new ArrayList<SensorData>();
+        var moves = new ArrayList<Move>();
+        int movesCounter = 1;
+        var currentPoint = startingPoint;
+        // Array of points
+        var points = new ArrayList<Point>();
+        // Flag to check if the drone reached its initial position
+        boolean reachedBack = false;
         
-       boolean reachedBack = false;
-       var visitedPoints = new ArrayList<AirQualityEntry>();
-       var moves = new ArrayList<Move>();
-       int jotaro = 1;
-       var currentPoint = startingPoint;
-       var tempoo = new ArrayList<Point>();
        
        var features = new ArrayList<Feature>();
        features.add(Feature.fromGeometry(startingPoint));
        features.get(0).addBooleanProperty("Starting Point", true);
        
-       for (AirQualityEntry aqee : listOfEntries) {
-    	   features.add(Feature.fromGeometry((Point.fromLngLat(Double.parseDouble(aqee.lng), Double.parseDouble(aqee.lat)))));
+       for (SensorData sensor : listOfEntries) {
+    	   features.add(Feature.fromGeometry((Point.fromLngLat(Double.parseDouble(sensor.lng), Double.parseDouble(sensor.lat)))));
        }
        
        var features1 = new ArrayList<Feature>();
@@ -194,43 +182,53 @@ public class App
        while (reachedBack == false) {
     	   
     	   List<Detail> listOfPoints = new LinkedList<Detail>();
-    	   
+    	   for (Feature feature : noFlyAreas.features()) {
+    		   System.out.println("Point is not in " +  feature.properties().toString());
+    		   System.out.println(TurfJoins.inside(Point.fromLngLat(-3.185459, 55.945020),(Polygon)feature.geometry()));
+    		   
+    	   }
     	   for (int i = 0; i <= 90; i += 10) {
-    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.sin(i), currentPoint.latitude() + move*Math.cos(i));
+    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.cos(i), currentPoint.latitude() + move*Math.sin(i));
     		   if (TurfJoins.inside(yolo, workingArea) == false ) {
     			   continue;
-    		   }    		   
-    		       		       			       		      		   
+    		   }
+    		   if (isLineInFC(currentPoint, noFlyAreas, i)) {
+    			   continue;
+    		   }  		       		       			       		      		   
     		   listOfPoints.add(new Detail(i, yolo, currentPoint));   
     	   }
     	   for (int i = 100; i <= 180; i += 10) {
-    		   var yolo = Point.fromLngLat(currentPoint.longitude() - move*Math.sin(i), currentPoint.latitude() + move*Math.cos(i));
+    		   var yolo = Point.fromLngLat(currentPoint.longitude() - move*Math.cos(i), currentPoint.latitude() + move*Math.sin(i));
     		   if (TurfJoins.inside(yolo, workingArea) == false ) {
     			   continue;
-    		   }    		   
-    		      		       			       		     	
+    		   }
+    		   if (isLineInFC(currentPoint, noFlyAreas, i)) {
+    			   continue;
+    		   }   		      		       			       		     	
     		   listOfPoints.add(new Detail(i, yolo, currentPoint));   
     	   }
     	   for (int i = 190; i <= 270; i += 10) {
-    		   var yolo = Point.fromLngLat(currentPoint.longitude() - move*Math.sin(i), currentPoint.latitude() - move*Math.cos(i));
+    		   var yolo = Point.fromLngLat(currentPoint.longitude() - move*Math.cos(i), currentPoint.latitude() - move*Math.sin(i));
     		   if (TurfJoins.inside(yolo, workingArea) == false ) {
     			   continue;
-    		   }    		   
-    		       		       			       		     	
+    		   }
+    		   if (isLineInFC(currentPoint, noFlyAreas, i)) {
+    			   continue;
+    		   }    		       		       			       		     	
     		   listOfPoints.add(new Detail(i, yolo, currentPoint));    
     	   }
     	   for (int i = 280; i <= 350; i += 10) {
-    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.sin(i), currentPoint.latitude() - move*Math.cos(i));
+    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.cos(i), currentPoint.latitude() - move*Math.sin(i));
     		   if (TurfJoins.inside(yolo, workingArea) == false ) {
     			   continue;
-    		   }    		   
-    		      		       			       		     	
+    		   }
+    		   if (isLineInFC(currentPoint, noFlyAreas, i)) {
+    			   continue;
+    		   }      		       			       		     	
     		   listOfPoints.add(new Detail(i, yolo, currentPoint));    
     	   }
-    	   
-    	   var toRemove = new ArrayList<Detail>();
-    	   
-    	   
+    	   /*
+    	   var toRemove = new ArrayList<Detail>();   
     	   for (Feature feature1 : noFlyAreas.features()) {
     		   for (Detail detail1 : listOfPoints) {
     			   if (isLineInPoly(detail1, feature1)) {
@@ -239,16 +237,14 @@ public class App
     		   }
     	   }
     	   
-    	   
-    	   
+    	   // Check if any points are in the forbidden zone and delete them if they are
     	    for (Detail detail : listOfPoints) {
     		   for (Feature feature : noFlyAreas.features()) {
     			   if (isLineInPoly(detail, feature)) {
     				   toRemove.add(detail);
     			   }
     		   }
-    	   }
-    	   
+    	   }  	   
     	   listOfPoints.removeAll(toRemove);
     	   
     	   for (Feature feature : noFlyAreas.features()) {
@@ -263,12 +259,12 @@ public class App
     	   
     	   
     	   listOfPoints.removeAll(toRemove);
-    	   
-    	   System.out.println("Done with Points for " + jotaro);
+    	   */
+    	   System.out.println("Done with Points for " + movesCounter);
     	   
     	   
     	   List<List<Difference>> listOfLists = new ArrayList<List<Difference>>();
-    	   for (AirQualityEntry aqe : listOfEntries) {
+    	   for (SensorData aqe : listOfEntries) {
     		   List<Difference> temporaryList = new ArrayList<Difference>();
     		   for (Detail detail1 : listOfPoints) {
     			   temporaryList.add(new Difference(detail1, aqe, distance(Point.fromLngLat(Double.parseDouble(aqe.lng), Double.parseDouble(aqe.lat)), detail1.estimatedPoint)));
@@ -288,16 +284,16 @@ public class App
     	   var newDifference = yes.get(0);
     	   
     	   
-    	   moves.add(new Move(jotaro, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(newDifference.source.estimatedPoint.longitude(), newDifference.source.estimatedPoint.latitude())));
-    	   moves.get(jotaro - 1).addDirection(newDifference.source.direction);
-    	   System.out.println(moves.get(jotaro - 1).toString());
+    	   moves.add(new Move(movesCounter, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(newDifference.source.estimatedPoint.longitude(), newDifference.source.estimatedPoint.latitude())));
+    	   moves.get(movesCounter - 1).addDirection(newDifference.source.direction);
+    	   System.out.println(moves.get(movesCounter - 1).toString());
     	   
-    	   moves.get(jotaro - 1).addDirection(newDifference.source.direction);
-    	   last4Moves.add(((jotaro - 1) % 4), new Move(jotaro, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(newDifference.source.estimatedPoint.longitude(), newDifference.source.estimatedPoint.latitude())));
+    	   moves.get(movesCounter - 1).addDirection(newDifference.source.direction);
+    	   last4Moves.add(((movesCounter - 1) % 4), new Move(movesCounter, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(newDifference.source.estimatedPoint.longitude(), newDifference.source.estimatedPoint.latitude())));
     	   
     	   
-    	   tempoo.add(Point.fromLngLat(moves.get(jotaro - 1).beforeMove.lng, moves.get(jotaro - 1).beforeMove.lat));
-    	   tempoo.add(Point.fromLngLat(moves.get(jotaro - 1).afterMove.lng, moves.get(jotaro - 1).afterMove.lat));
+    	   points.add(Point.fromLngLat(moves.get(movesCounter - 1).beforeMove.lng, moves.get(movesCounter - 1).beforeMove.lat));
+    	   points.add(Point.fromLngLat(moves.get(movesCounter - 1).afterMove.lng, moves.get(movesCounter - 1).afterMove.lat));
     	   
     	   
     	   currentPoint = newDifference.source.estimatedPoint;
@@ -307,7 +303,7 @@ public class App
     	   if (isEqual(last4Moves.get(0).afterMove, last4Moves.get(2).afterMove)) {
     		   if (isEqual(last4Moves.get(1).afterMove, last4Moves.get(3).afterMove)) {
     			   var tempPoint = Point.fromLngLat(currentPoint.longitude() + move*Math.sin(50), currentPoint.latitude() - move * Math.cos(50));
-    			   moves.add(new Move(jotaro + 1, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(tempPoint.longitude(), tempPoint.latitude())));
+    			   moves.add(new Move(movesCounter + 1, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(tempPoint.longitude(), tempPoint.latitude())));
     			   currentPoint = tempPoint;
     		   }
     	   }
@@ -315,7 +311,7 @@ public class App
     	   
     	   if (distance(currentPoint,Point.fromLngLat(Double.parseDouble(newDifference.dest.lng), Double.parseDouble(newDifference.dest.lat))) < 0.0002) {
     		   System.out.println(newDifference.dest.location + " " + newDifference.dest.reading);
-    		   moves.get(jotaro - 1).addLocation(newDifference.dest.location);
+    		   moves.get(movesCounter - 1).addLocation(newDifference.dest.location);
     		   var temporary = Feature.fromGeometry(Point.fromLngLat(Double.parseDouble(newDifference.dest.lng), Double.parseDouble(newDifference.dest.lat)));
     		   temporary.addStringProperty("location", newDifference.dest.location);
     		   
@@ -335,16 +331,14 @@ public class App
     	   }
     	   
     	   if (listOfEntries.isEmpty()) {
-    		   listOfEntries.add(new AirQualityEntry(startingPoint));
+    		   listOfEntries.add(new SensorData(startingPoint));
     	   }
 
-    	   jotaro ++;
+    	   movesCounter ++;
        
-           
-        	
-           if (jotaro == 300) {
-        	   System.out.println("More than 300 moves!");
-        	   features1.add(Feature.fromGeometry(LineString.fromLngLats(tempoo)));
+           if (movesCounter == 150) {
+        	   System.out.println("More than 150 moves!");
+        	   features1.add(Feature.fromGeometry(LineString.fromLngLats(points)));
                var fcaa = FeatureCollection.fromFeatures(features1);
                try {
             	   writeFileToGEOJSON("resultWithError.geojson", fcaa); 
@@ -361,10 +355,11 @@ public class App
        
        
        
-       features1.add(Feature.fromGeometry(LineString.fromLngLats(tempoo)));
+       features1.add(Feature.fromGeometry(LineString.fromLngLats(points)));
        var fcaa = FeatureCollection.fromFeatures(features1);
        try {
-    	   writeFileToGEOJSON("result.geojson", fcaa); 
+    	   String fileName = String.format("readings-%s-%s-%s.geojson", args[0], args[1], args[2]);
+    	   writeFileToGEOJSON(fileName, fcaa); 
        } catch (Exception e) {
 		e.printStackTrace();
 	}
@@ -372,7 +367,8 @@ public class App
        
     
       try {
-    	  IOOperations.writeFile(moves);
+    	  String fileName = String.format("flightpath-%s-%s-%s.txt", args[0], args[1], args[2]);
+    	  IOOperations.writeMovesToFile(moves, fileName);
       } catch (Exception e) {
 		e.printStackTrace();
 	}
