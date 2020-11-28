@@ -13,4 +13,6 @@ public class Coordinates {
 	public String toString() {
 		return String.valueOf(lat) + "," + String.valueOf(lng);
 	}
+	
+		
 }

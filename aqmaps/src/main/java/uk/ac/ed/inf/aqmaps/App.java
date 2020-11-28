@@ -3,8 +3,8 @@ package uk.ac.ed.inf.aqmaps;
 import com.mapbox.geojson.*;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.mapbox.geojson.MultiPolygon;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -24,40 +24,85 @@ public class App
     	file.close();
 	}
 	
+	public static boolean isEqual(Coordinates a, Coordinates b) {
+		if (a.lat == b.lat && a.lng == b.lng) {
+			return true;
+		}
+		return false;
+	}
+	
 	public static boolean isLineInPoly(Detail detail, Feature feature) {
-		for (int to = 1; to < 10; to++) {
-			double move1 = 0.00003*to;
+		for (int to = 1; to < 100; to++) {
+			double move1 = 0.000003*to;
 			
 			if (detail.direction >= 0 && detail.direction <= 90) {
 				var yolo = Point.fromLngLat(detail.startingPoint.longitude() + move1*Math.sin(detail.direction), detail.startingPoint.latitude() + move1*Math.cos(detail.direction));
 				if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
-					return true;
-					
+					return true;					
 				}
 			}
 			if (detail.direction >= 100 && detail.direction <= 180) {
 				var yolo = Point.fromLngLat(detail.startingPoint.longitude() - move1*Math.sin(detail.direction), detail.startingPoint.latitude() + move1*Math.cos(detail.direction));
 				if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
-					return true;
-					
+					return true;				
 				}
 			}
 			if (detail.direction >= 190 && detail.direction <= 270) {
 				var yolo = Point.fromLngLat(detail.startingPoint.longitude() - move1*Math.sin(detail.direction), detail.startingPoint.latitude() - move1*Math.cos(detail.direction));
 				if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
-					return true;
-					
+					return true;					
 				}
 			}
 			if (detail.direction >= 280 && detail.direction <= 350) {
 				var yolo = Point.fromLngLat(detail.startingPoint.longitude() + move1*Math.sin(detail.direction), detail.startingPoint.latitude() - move1*Math.cos(detail.direction));
 				if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
-					return true;
-					
+					return true;					
 				}
 			}
 		}	
 		return false;
+	}
+	
+	public static Feature addAttributes(Feature feature, double reading) {
+		if ((reading >= 0 ) && (reading < 32)) {
+			feature.addStringProperty("rgb-string", "#00ff00");
+			feature.addStringProperty("marker-color", "#00ff00");
+			feature.addStringProperty("marker-symbol", "lighthouse");
+		} else if ((reading >= 32 ) && (reading < 64)) {
+			feature.addStringProperty("rgb-string", "#40ff00");
+			feature.addStringProperty("marker-color", "#40ff00");
+			feature.addStringProperty("marker-symbol", "lighthouse");
+		} else if ((reading >= 64 ) && (reading < 96)) {
+			feature.addStringProperty("rgb-string", "#80ff00");
+			feature.addStringProperty("marker-color", "#80ff00");
+			feature.addStringProperty("marker-symbol", "lighthouse");
+		} else if ((reading >= 96 ) && (reading < 128)) {
+			feature.addStringProperty("rgb-string", "#c0ff00");
+			feature.addStringProperty("marker-color", "#c0ff00");
+			feature.addStringProperty("marker-symbol", "lighthouse");
+		} else if ((reading >= 128 ) && (reading < 160)) {
+			feature.addStringProperty("rgb-string", "#ffc000");
+			feature.addStringProperty("marker-color", "#ffc000");
+			feature.addStringProperty("marker-symbol", "danger");
+		} else if ((reading >= 160 ) && (reading < 192)) {
+			feature.addStringProperty("rgb-string", "#ff8000");
+			feature.addStringProperty("marker-color", "#ff8000");
+			feature.addStringProperty("marker-symbol", "danger");
+		} else if ((reading >= 192 ) && (reading < 224)) {
+			feature.addStringProperty("rgb-string", "#ff4000");
+			feature.addStringProperty("marker-color", "#ff4000");
+			feature.addStringProperty("marker-symbol", "danger");
+		} else if ((reading >= 224 ) && (reading < 256)) {
+			feature.addStringProperty("rgb-string", "#ff0000");
+			feature.addStringProperty("marker-color", "#ff0000");
+			feature.addStringProperty("marker-symbol", "danger");
+		} else {
+			feature.addStringProperty("rgb-string", "#aaaaaa");
+			feature.addStringProperty("marker-color", "#aaaaaa");
+			feature.addStringProperty("marker-symbol", "cross");
+		}
+		feature.addStringProperty("marker-size", "medium");    					
+		return feature;
 	}
 	
 	public static final Point northWest = Point.fromLngLat(-3.192473, 55.946233);
@@ -127,12 +172,14 @@ public class App
         	entry.lng = Words.coordinates.lng;        	
         }
         
+       var last4Moves = new ArrayList<Move>();
+        
        boolean reachedBack = false;
        var visitedPoints = new ArrayList<AirQualityEntry>();
        var moves = new ArrayList<Move>();
-       int jotaro = 0;
+       int jotaro = 1;
        var currentPoint = startingPoint;
-       
+       var tempoo = new ArrayList<Point>();
        
        var features = new ArrayList<Feature>();
        features.add(Feature.fromGeometry(startingPoint));
@@ -141,6 +188,8 @@ public class App
        for (AirQualityEntry aqee : listOfEntries) {
     	   features.add(Feature.fromGeometry((Point.fromLngLat(Double.parseDouble(aqee.lng), Double.parseDouble(aqee.lat)))));
        }
+       
+       var features1 = new ArrayList<Feature>();
        
        while (reachedBack == false) {
     	   
@@ -239,160 +288,95 @@ public class App
     	   var newDifference = yes.get(0);
     	   
     	   
-    	   moves.add(new Move(jotaro, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(newDifference.source.estimatedPoint.longitude(), 
-    			   																										newDifference.source.estimatedPoint.latitude())));
+    	   moves.add(new Move(jotaro, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(newDifference.source.estimatedPoint.longitude(), newDifference.source.estimatedPoint.latitude())));
+    	   moves.get(jotaro - 1).addDirection(newDifference.source.direction);
+    	   System.out.println(moves.get(jotaro - 1).toString());
     	   
-    	   System.out.println(moves.get(jotaro).toString());
+    	   moves.get(jotaro - 1).addDirection(newDifference.source.direction);
+    	   last4Moves.add(((jotaro - 1) % 4), new Move(jotaro, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(newDifference.source.estimatedPoint.longitude(), newDifference.source.estimatedPoint.latitude())));
     	   
     	   
-    	   var tempoo = new ArrayList<Point>();
-    	   tempoo.add(Point.fromLngLat(moves.get(jotaro).beforeMove.lng, moves.get(jotaro).beforeMove.lat));
-    	   tempoo.add(Point.fromLngLat(moves.get(jotaro).afterMove.lng, moves.get(jotaro).afterMove.lat));
+    	   tempoo.add(Point.fromLngLat(moves.get(jotaro - 1).beforeMove.lng, moves.get(jotaro - 1).beforeMove.lat));
+    	   tempoo.add(Point.fromLngLat(moves.get(jotaro - 1).afterMove.lng, moves.get(jotaro - 1).afterMove.lat));
     	   
     	   
     	   currentPoint = newDifference.source.estimatedPoint;
     	   
-    	   jotaro ++;
     	   
+    	   if (last4Moves.size() == 4 ) {
+    	   if (isEqual(last4Moves.get(0).afterMove, last4Moves.get(2).afterMove)) {
+    		   if (isEqual(last4Moves.get(1).afterMove, last4Moves.get(3).afterMove)) {
+    			   var tempPoint = Point.fromLngLat(currentPoint.longitude() + move*Math.sin(50), currentPoint.latitude() - move * Math.cos(50));
+    			   moves.add(new Move(jotaro + 1, new Coordinates(currentPoint.longitude(), currentPoint.latitude()), new Coordinates(tempPoint.longitude(), tempPoint.latitude())));
+    			   currentPoint = tempPoint;
+    		   }
+    	   }
+    	   }
     	   
     	   if (distance(currentPoint,Point.fromLngLat(Double.parseDouble(newDifference.dest.lng), Double.parseDouble(newDifference.dest.lat))) < 0.0002) {
     		   System.out.println(newDifference.dest.location + " " + newDifference.dest.reading);
+    		   moves.get(jotaro - 1).addLocation(newDifference.dest.location);
+    		   var temporary = Feature.fromGeometry(Point.fromLngLat(Double.parseDouble(newDifference.dest.lng), Double.parseDouble(newDifference.dest.lat)));
+    		   temporary.addStringProperty("location", newDifference.dest.location);
+    		   
+    		   if (newDifference.dest.reading != null) {
+    		   if (newDifference.dest.reading.contains("n") == false) {
+    		   addAttributes(temporary, Double.parseDouble(newDifference.dest.reading));
+    		   
+    		   		}
+    		   	}
+    		   features1.add(temporary);
     		   listOfEntries.remove(newDifference.dest);
         	   visitedPoints.add(newDifference.dest);
     	   }
     	   
-    	   if (distance(currentPoint, startingPoint) < 0.0002 && (listOfEntries.isEmpty() == true)) {
+    	   if (distance(currentPoint, startingPoint) < 0.0003 && (listOfEntries.isEmpty() == true)) {
     		   break;
     	   }
     	   
     	   if (listOfEntries.isEmpty()) {
     		   listOfEntries.add(new AirQualityEntry(startingPoint));
     	   }
-    	   
-    	   
-    	  
-    	   
+
+    	   jotaro ++;
        
            
-        	features.add(Feature.fromGeometry(LineString.fromLngLats(tempoo)));
+        	
+           if (jotaro == 300) {
+        	   System.out.println("More than 300 moves!");
+        	   features1.add(Feature.fromGeometry(LineString.fromLngLats(tempoo)));
+               var fcaa = FeatureCollection.fromFeatures(features1);
+               try {
+            	   writeFileToGEOJSON("resultWithError.geojson", fcaa); 
+               } catch (Exception e) {
+        		e.printStackTrace();
+        	}
+        	   
+        	   System.exit(69);
+        	   
+           }
            
-           var fcaa = FeatureCollection.fromFeatures(features);
-           try {
-        	   writeFileToGEOJSON("result.geojson", fcaa); 
-           } catch (Exception e) {
-			e.printStackTrace();
-		}
-           
-    	   
+              	   
        }
        
-       /* List<Vertex> vertices = new LinkedList<Vertex>();
-
-       int k = 0;
-        for (double i = 55.94267; i < 55.94623; i += 0.00001 ) {
-        	for (double j = 3.18431; j < 3.19247; j += 0.00001) {
-        		
-        		var temp1 = new Vertex(-j, i);
-        		vertices.add(temp1);        		
-        	} 
-        	
-        	System.out.println(" Row " + k);
-        	k ++;
-        }
-        
-        List<Vertex> toRemove = new ArrayList<Vertex>();
-        
-        for (Vertex vertex : vertices) {
-        	for (Feature feature : noFlyAreas.features()) {
-        		if (TurfJoins.inside(Point.fromLngLat(vertex.longitude, vertex.latitude), (Polygon)feature.geometry())) {
-        			System.out.println("Removed " + vertex.latitude + "," + vertex.longitude);
-        			toRemove.add(vertex);
-        		}
-        	}
-        }
-        
-        vertices.removeAll(toRemove);
-        
-        var point = Point.fromLngLat(-3.1866, 55.9445);
-        var point2 = Point.fromLngLat(-3.1874, 55.9444);
-        
-        
-        */
-        
-        
-        
-        /* List<Edge> edges = new ArrayList<Edge>();
-        int iter = 0;
-        for (Vertex vertex : vertices) {
-        	for (int i = 0; i <=  90; i += 10) {
-        		var temp4 = new Vertex(vertex.longitude + round(move*Math.sin(i),5), vertex.latitude + round(move*Math.cos(i),5));
-        		if (TurfJoins.inside(Point.fromLngLat(temp4.longitude, temp4.latitude), workingArea)) {
-        			for (Feature feature : noFlyAreas.features()) {
-        				if(TurfJoins.inside(Point.fromLngLat(temp4.longitude, temp4.latitude), (Polygon)feature.geometry()) == false){
-        					var edge = new Edge(String.valueOf(iter), vertex, temp4, 1);
-        					edges.add(edge);
-        					iter ++;
-        				}
-        			}
-        		}        		
-        	}
-        	for (int i = 100; i <=  180; i += 10) {
-        		var temp4 = new Vertex(vertex.longitude + round(move*Math.sin(i),5), vertex.latitude - round(move*Math.cos(i),5));
-        		if (TurfJoins.inside(Point.fromLngLat(temp4.longitude, temp4.latitude), workingArea)) {
-        			for (Feature feature : noFlyAreas.features()) {
-        				if(TurfJoins.inside(Point.fromLngLat(temp4.longitude, temp4.latitude), (Polygon)feature.geometry()) == false){
-        					var edge = new Edge(String.valueOf(iter), vertex, temp4, 1);
-        					edges.add(edge);
-        					iter ++;
-        				}
-        			}
-        		}        		
-        	}
-        	for (int i = 190; i <=  270; i += 10) {
-        		var temp4 = new Vertex(vertex.longitude - round(move*Math.sin(i),5), vertex.latitude - round(move*Math.cos(i),5));
-        		if (TurfJoins.inside(Point.fromLngLat(temp4.longitude, temp4.latitude), workingArea)) {
-        			for (Feature feature : noFlyAreas.features()) {
-        				if(TurfJoins.inside(Point.fromLngLat(temp4.longitude, temp4.latitude), (Polygon)feature.geometry()) == false){
-        					var edge = new Edge(String.valueOf(iter), vertex, temp4, 1);
-        					edges.add(edge);
-        					iter ++;
-        				}
-        			}
-        		}        		
-        	}
-        	for (int i = 280; i <=  350; i += 10) {
-        		var temp4 = new Vertex(vertex.longitude - round(move*Math.sin(i),5), vertex.latitude + round(move*Math.cos(i),5));
-        		if (TurfJoins.inside(Point.fromLngLat(temp4.longitude, temp4.latitude), workingArea)) {
-        			for (Feature feature : noFlyAreas.features()) {
-        				if(TurfJoins.inside(Point.fromLngLat(temp4.longitude, temp4.latitude), (Polygon)feature.geometry()) == false){
-        					var edge = new Edge(String.valueOf(iter), vertex, temp4, 1);
-        					edges.add(edge);
-        					iter ++;
-        				}
-        			}
-        		}        		
-        	}
-        	System.out.print("Done: " + vertex.longitude + "," + vertex.latitude);
-        } */
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-       /* 
-        
-        // USE TURF TO CHECK IF IT IS INSIDE THE POLYGON
-        for (Feature feature : noFlyAreas.features()) {
-        	System.out.println("It is inside (1): " + feature.getProperty("name") + TurfJoins.inside(point, (Polygon)feature.geometry()));
-            System.out.println("It is inside (2): " + feature.getProperty("name") + TurfJoins.inside(point2, (Polygon)feature.geometry()));
-        } */
-        
+       
+       
+       features1.add(Feature.fromGeometry(LineString.fromLngLats(tempoo)));
+       var fcaa = FeatureCollection.fromFeatures(features1);
+       try {
+    	   writeFileToGEOJSON("result.geojson", fcaa); 
+       } catch (Exception e) {
+		e.printStackTrace();
+	}
+       
+       
+    
+      try {
+    	  IOOperations.writeFile(moves);
+      } catch (Exception e) {
+		e.printStackTrace();
+	}
+       
+   
     }
 }

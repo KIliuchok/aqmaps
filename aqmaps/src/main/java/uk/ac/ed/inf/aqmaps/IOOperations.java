@@ -1,6 +1,9 @@
 package uk.ac.ed.inf.aqmaps;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.util.List;
 
 import com.mapbox.geojson.FeatureCollection;
 
@@ -11,6 +14,14 @@ public class IOOperations {
     	file.write(fc.toJson());
     	System.out.println("Successfully Created File");
     	file.close();
+	}
+	
+	public static void writeFile(List<Move> list) throws Exception {
+		FileWriter fw = new FileWriter("flightpath-CHANGE-DATE.txt");
+		for (Move move : list) {
+			fw.write(String.format("%d,%f,%f,%d,%f,%f,%s\n", move.moveId, move.beforeMove.lng, move.beforeMove.lat,  move.direction, move.afterMove.lng, move.afterMove.lat, move.location));
+		}
+		fw.close();
 	}
 
 }
