@@ -38,25 +38,25 @@ public class App
 			double move1 = 0.000003*j;	
 			for (Feature feature: fc.features()) {
 					if (direction >= 0 && direction <= 90) {
-						var yolo = Point.fromLngLat(startingPoint.longitude() + move1*Math.cos(direction), startingPoint.latitude() + move1*Math.sin(direction));
+						var yolo = Point.fromLngLat(startingPoint.longitude() + move1*Math.cos(Math.toRadians(direction)), startingPoint.latitude() + move1*Math.sin(Math.toRadians(direction)));
 						if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
 							return true;					
 						}
 					}
 					if (direction >= 100 && direction <= 180) {
-						var yolo = Point.fromLngLat(startingPoint.longitude() - move1*Math.cos(direction), startingPoint.latitude() + move1*Math.sin(direction));
+						var yolo = Point.fromLngLat(startingPoint.longitude() + move1*Math.cos(Math.toRadians(direction)), startingPoint.latitude() + move1*Math.sin(Math.toRadians(direction)));
 						if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
 							return true;					
 						}
 					}
 					if (direction >= 190 && direction <= 270) {
-						var yolo = Point.fromLngLat(startingPoint.longitude() - move1*Math.cos(direction), startingPoint.latitude() - move1*Math.sin(direction));
+						var yolo = Point.fromLngLat(startingPoint.longitude() + move1*Math.cos(Math.toRadians(direction)), startingPoint.latitude() + move1*Math.sin(Math.toRadians(direction)));
 						if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
 							return true;					
 						}
 					}
 					if (direction >= 280 && direction <= 350) {
-						var yolo = Point.fromLngLat(startingPoint.longitude() + move1*Math.cos(direction), startingPoint.latitude() - move1*Math.sin(direction));
+						var yolo = Point.fromLngLat(startingPoint.longitude() + move1*Math.cos(Math.toRadians(direction)), startingPoint.latitude() + move1*Math.sin(Math.toRadians(direction)));
 						if (TurfJoins.inside(yolo, (Polygon)feature.geometry())){
 							return true;					
 						}
@@ -182,13 +182,16 @@ public class App
        while (reachedBack == false) {
     	   
     	   List<Detail> listOfPoints = new LinkedList<Detail>();
+    	   
+    	   /*
     	   for (Feature feature : noFlyAreas.features()) {
     		   System.out.println("Point is not in " +  feature.properties().toString());
     		   System.out.println(TurfJoins.inside(Point.fromLngLat(-3.185459, 55.945020),(Polygon)feature.geometry()));
     		   
     	   }
+    	   */
     	   for (int i = 0; i <= 90; i += 10) {
-    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.cos(i), currentPoint.latitude() + move*Math.sin(i));
+    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.cos(Math.toRadians(i)), currentPoint.latitude() + move*Math.sin(Math.toRadians(i)));
     		   if (TurfJoins.inside(yolo, workingArea) == false ) {
     			   continue;
     		   }
@@ -198,7 +201,7 @@ public class App
     		   listOfPoints.add(new Detail(i, yolo, currentPoint));   
     	   }
     	   for (int i = 100; i <= 180; i += 10) {
-    		   var yolo = Point.fromLngLat(currentPoint.longitude() - move*Math.cos(i), currentPoint.latitude() + move*Math.sin(i));
+    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.cos(Math.toRadians(i)), currentPoint.latitude() + move*Math.sin(Math.toRadians(i)));
     		   if (TurfJoins.inside(yolo, workingArea) == false ) {
     			   continue;
     		   }
@@ -207,8 +210,8 @@ public class App
     		   }   		      		       			       		     	
     		   listOfPoints.add(new Detail(i, yolo, currentPoint));   
     	   }
-    	   for (int i = 190; i <= 270; i += 10) {
-    		   var yolo = Point.fromLngLat(currentPoint.longitude() - move*Math.cos(i), currentPoint.latitude() - move*Math.sin(i));
+    	   for (int i = 190; i < 280; i += 10) {
+    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.cos(Math.toRadians(i)), currentPoint.latitude() + move*Math.sin(Math.toRadians(i)));
     		   if (TurfJoins.inside(yolo, workingArea) == false ) {
     			   continue;
     		   }
@@ -218,7 +221,7 @@ public class App
     		   listOfPoints.add(new Detail(i, yolo, currentPoint));    
     	   }
     	   for (int i = 280; i <= 350; i += 10) {
-    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.cos(i), currentPoint.latitude() - move*Math.sin(i));
+    		   var yolo = Point.fromLngLat(currentPoint.longitude() + move*Math.cos(Math.toRadians(i)), currentPoint.latitude() + move*Math.sin(Math.toRadians(i)));
     		   if (TurfJoins.inside(yolo, workingArea) == false ) {
     			   continue;
     		   }
