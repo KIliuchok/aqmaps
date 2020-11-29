@@ -20,7 +20,6 @@ public class NetworkRead {
 				System.exit(69);
 			} else {
 				output = response.body();
-				System.out.println("Object was read");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
