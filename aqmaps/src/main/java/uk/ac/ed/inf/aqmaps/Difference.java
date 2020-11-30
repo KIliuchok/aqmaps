@@ -1,15 +1,13 @@
 package uk.ac.ed.inf.aqmaps;
 
 public class Difference {
-	public Detail source;
+	public DirectionalLine source;
 	public SensorData dest;  
 	public double distance;
 	
-	public Difference (Detail duh, SensorData duh2, double dist) {
-		this.source = duh;
-		this.dest = duh2;
+	public Difference (DirectionalLine line, SensorData sensor, double dist) {
+		this.source = line;
+		this.dest = sensor;
 		this.distance = dist;
 	}
-		
-
 }

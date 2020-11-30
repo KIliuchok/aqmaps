@@ -1,17 +1,25 @@
 package uk.ac.ed.inf.aqmaps;
 
 public class Coordinates {
-	double lat;
-	double lng;
+	private double latitude;
+	private double longitude;
 
 	public Coordinates(double lng, double lat) {
-		this.lng = lng;
-		this.lat = lat;
+		this.longitude = lng;
+		this.latitude = lat;
 	}
 
 	@Override
 	public String toString() {
-		return String.valueOf(lat) + "," + String.valueOf(lng);
+		return String.valueOf(longitude) + "," + String.valueOf(latitude);
+	}
+
+	public double getLat() {
+		return latitude;
+	}
+
+	public double getLng() {
+		return longitude;
 	}
 	
 		

@@ -6,8 +6,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 
 public class NetworkRead {
-
-	
 	public static String readNetworkToString(String urlString) {
 		var client = HttpClient.newHttpClient();
 		var request = HttpRequest.newBuilder().uri(URI.create(urlString)).build();

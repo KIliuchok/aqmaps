@@ -1,11 +1,31 @@
 package uk.ac.ed.inf.aqmaps;
 
 public class Move {
-	int moveId;
-	Coordinates beforeMove;
-	Coordinates afterMove;
-	String location;
-	int direction;
+	private int moveId;
+	private Coordinates beforeMove;
+	private Coordinates afterMove;
+	public Coordinates getBeforeMove() {
+		return beforeMove;
+	}
+
+	public Coordinates getAfterMove() {
+		return afterMove;
+	}
+
+	public int getMoveId() {
+		return moveId;
+	}
+
+	public String getLocation() {
+		return location;
+	}
+
+	public int getDirection() {
+		return direction;
+	}
+
+	private String location;
+	private int direction;
 	
 	public Move (int a, Coordinates b, Coordinates c) {
 		this.moveId = a;
