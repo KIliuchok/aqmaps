@@ -2,14 +2,14 @@ package uk.ac.ed.inf.aqmaps;
 
 import java.util.Comparator;
 
-public class SortByDistance implements Comparator<Difference> {
+public class SortByDistance implements Comparator<VectorAndGoalSensor> {
 
 	
-	public int compare(Difference arg0, Difference arg1) {
-		if (arg0.distance < arg1.distance) {
-			return -1;
+	public int compare(VectorAndGoalSensor arg0, VectorAndGoalSensor arg1) {
+		if (arg0.getDistance() > arg1.getDistance()) {
+			return 1;
 		}
-		return 1;		
+		return -1;		
 	}
 
 	

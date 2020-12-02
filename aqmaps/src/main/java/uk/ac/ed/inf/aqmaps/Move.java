@@ -1,9 +1,12 @@
 package uk.ac.ed.inf.aqmaps;
 
 public class Move {
-	private int moveId;
+	private int moveNumber;
 	private Coordinates beforeMove;
 	private Coordinates afterMove;
+	private String location;
+	private int direction;
+
 	public Coordinates getBeforeMove() {
 		return beforeMove;
 	}
@@ -12,8 +15,8 @@ public class Move {
 		return afterMove;
 	}
 
-	public int getMoveId() {
-		return moveId;
+	public int getMoveNum() {
+		return moveNumber;
 	}
 
 	public String getLocation() {
@@ -24,25 +27,18 @@ public class Move {
 		return direction;
 	}
 
-	private String location;
-	private int direction;
-	
-	public Move (int a, Coordinates b, Coordinates c) {
-		this.moveId = a;
+	public Move(int moveNumber, Coordinates b, Coordinates c) {
+		this.moveNumber = moveNumber;
 		this.beforeMove = b;
 		this.afterMove = c;
 	}
-	
+
 	public void addLocation(String loc) {
 		this.location = loc;
 	}
+
 	public void addDirection(int direction) {
 		this.direction = direction;
-	}
-	
-	@Override
-	public String toString() {
-		return beforeMove.toString() + " " + afterMove.toString();
 	}
 
 }

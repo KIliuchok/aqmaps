@@ -9,11 +9,6 @@ public class Coordinates {
 		this.latitude = lat;
 	}
 
-	@Override
-	public String toString() {
-		return String.valueOf(longitude) + "," + String.valueOf(latitude);
-	}
-
 	public double getLat() {
 		return latitude;
 	}

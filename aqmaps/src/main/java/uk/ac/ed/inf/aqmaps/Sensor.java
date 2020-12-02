@@ -2,19 +2,10 @@ package uk.ac.ed.inf.aqmaps;
 
 import com.mapbox.geojson.*;
 
-public class SensorData {
+public class Sensor {
 	private String location;
 	private float battery;
 	private String reading;
-	private Boolean visited;
-
-	public Boolean getVisited() {
-		return visited;
-	}
-
-	public void setVisited(Boolean visited) {
-		this.visited = visited;
-	}
 
 	public String getLocation() {
 		return location;
@@ -44,7 +35,7 @@ public class SensorData {
 		return coordinates;
 	}
 
-	public SensorData (Point point) {
+	public Sensor(Point point) {
 		this.lat = point.latitude();
 		this.lng = point.longitude();
 	}

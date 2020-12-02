@@ -14,8 +14,7 @@ public class MovesAndPoints {
 		this.features = features;
 	}
 	
-	public MovesAndPoints() {
-		
+	public MovesAndPoints() {	
 	}
 	
 	public ArrayList<Move> getMoves(){
