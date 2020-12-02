@@ -11,6 +11,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import com.mapbox.turf.*;
 
@@ -67,48 +69,58 @@ public class App {
 		}
 		return false;
 	}
-	
-	public static Point fromSensorToPoint(SensorData sensor) {
-		return Point.fromLngLat(sensor.getCoordinates().getLng(), sensor.getCoordinates().getLat());
-	}
-	
-	public static void addColourAttribute(Feature feature, String colour) {
-		feature.addStringProperty("rgb-string", colour);
-		feature.addStringProperty("marker-color", colour);
-	}
 
 	public static Feature addAttributes(Feature feature, double reading) {
 		if ((reading >= 0) && (reading < 32)) {
-			addColourAttribute(feature, "00ff00");
+			feature.addStringProperty("rgb-string", "#00ff00");
+			feature.addStringProperty("marker-color", "#00ff00");
 			feature.addStringProperty("marker-symbol", "lighthouse");
 		} else if ((reading >= 32) && (reading < 64)) {
-			addColourAttribute(feature, "#40ff00");
+			feature.addStringProperty("rgb-string", "#40ff00");
+			feature.addStringProperty("marker-color", "#40ff00");
 			feature.addStringProperty("marker-symbol", "lighthouse");
 		} else if ((reading >= 64) && (reading < 96)) {
-			addColourAttribute(feature, "#80ff00");
+			feature.addStringProperty("rgb-string", "#80ff00");
+			feature.addStringProperty("marker-color", "#80ff00");
 			feature.addStringProperty("marker-symbol", "lighthouse");
 		} else if ((reading >= 96) && (reading < 128)) {
-			addColourAttribute(feature, "#c0ff00");
+			feature.addStringProperty("rgb-string", "#c0ff00");
+			feature.addStringProperty("marker-color", "#c0ff00");
 			feature.addStringProperty("marker-symbol", "lighthouse");
 		} else if ((reading >= 128) && (reading < 160)) {
-			addColourAttribute(feature, "#ffc000");
+			feature.addStringProperty("rgb-string", "#ffc000");
+			feature.addStringProperty("marker-color", "#ffc000");
 			feature.addStringProperty("marker-symbol", "danger");
 		} else if ((reading >= 160) && (reading < 192)) {
-			addColourAttribute(feature, "#ff8000");
+			feature.addStringProperty("rgb-string", "#ff8000");
+			feature.addStringProperty("marker-color", "#ff8000");
 			feature.addStringProperty("marker-symbol", "danger");
 		} else if ((reading >= 192) && (reading < 224)) {
-			addColourAttribute(feature, "#ff4000");
+			feature.addStringProperty("rgb-string", "#ff4000");
+			feature.addStringProperty("marker-color", "#ff4000");
 			feature.addStringProperty("marker-symbol", "danger");
 		} else if ((reading >= 224) && (reading < 256)) {
-			addColourAttribute(feature, "#ff0000");
+			feature.addStringProperty("rgb-string", "#ff0000");
+			feature.addStringProperty("marker-color", "#ff0000");
 			feature.addStringProperty("marker-symbol", "danger");
 		} else {
-			addColourAttribute(feature, "#aaaaaa");
+			feature.addStringProperty("rgb-string", "#aaaaaa");
+			feature.addStringProperty("marker-color", "#aaaaaa");
 		}
 		feature.addStringProperty("marker-size", "medium");
 		return feature;
 	}
 
+
+
+	public static double round(double value, int places) {
+		if (places < 0)
+			throw new IllegalArgumentException();
+
+		BigDecimal bd = BigDecimal.valueOf(value);
+		bd = bd.setScale(places, RoundingMode.HALF_UP);
+		return bd.doubleValue();
+	}
 
 	public static double distance(Point a, Point b) {
 		return Math.sqrt(Math.pow(a.longitude() - b.longitude(), 2) + Math.pow(a.latitude() - b.latitude(), 2));
@@ -231,70 +243,72 @@ public class App {
 				listOfLines.add(new DirectionalLine(i, yolo, currentPoint));
 			}
 
-			List<List<DirectionalLine>> listOfLists = new ArrayList<List<DirectionalLine>>();
+			List<List<Difference>> listOfLists = new ArrayList<List<Difference>>();
 			for (SensorData aqe : listOfEntries) {
-				List<DirectionalLine> temporaryList = new ArrayList<DirectionalLine>();
+				List<Difference> temporaryList = new ArrayList<Difference>();
 				for (DirectionalLine line : listOfLines) {
-					line.setDistanceToGoal(distance(fromSensorToPoint(aqe), line.getEstimatedPoint()));
-					line.setGoal(aqe);
-					temporaryList.add(line);
+					temporaryList.add(new Difference(line, aqe,
+							distance(Point.fromLngLat(aqe.getCoordinates().getLng(), aqe.getCoordinates().getLat()),
+									line.getEstimatedPoint())));
 				}
+
 				listOfLists.add(temporaryList);
 			}
 
-			var resultingList = new ArrayList<DirectionalLine>();
+			var yes = new ArrayList<Difference>();
 
-			for (List<DirectionalLine> list : listOfLists) {
+			for (List<Difference> list : listOfLists) {
 				Collections.sort(list, new SortByDistance());
-				resultingList.add(list.get(0));
+				yes.add(list.get(0));
 			}
-			Collections.sort(resultingList, new SortByDistance());
+			Collections.sort(yes, new SortByDistance());
 
-			var newDifference = resultingList.get(0);
+			var newDifference = yes.get(0);
 
 			moves.add(new Move(movesCounter, new Coordinates(currentPoint.longitude(), currentPoint.latitude()),
-					new Coordinates(newDifference.getEstimatedPoint().longitude(),
-							newDifference.getEstimatedPoint().latitude())));
-			moves.get(movesCounter - 1).addDirection(newDifference.getDirection());
+					new Coordinates(newDifference.source.getEstimatedPoint().longitude(),
+							newDifference.source.getEstimatedPoint().latitude())));
+			moves.get(movesCounter - 1).addDirection(newDifference.source.getDirection());
 			// System.out.println(moves.get(movesCounter - 1).toString());
 
 			last4Moves[movesCounter % 4] = (new Move((movesCounter),
 					new Coordinates(currentPoint.longitude(), currentPoint.latitude()),
-					new Coordinates(newDifference.getEstimatedPoint().longitude(),
-							newDifference.getEstimatedPoint().latitude())));
+					new Coordinates(newDifference.source.getEstimatedPoint().longitude(),
+							newDifference.source.getEstimatedPoint().latitude())));
 			if (movesCounter % 4 == 0) {
-				last4Moves[3].addDirection(newDifference.getDirection());
+				last4Moves[3].addDirection(newDifference.source.getDirection());
 			} else {
-				last4Moves[movesCounter % 4].addDirection(newDifference.getDirection());
+				last4Moves[movesCounter % 4].addDirection(newDifference.source.getDirection());
 			}
 			points.add(Point.fromLngLat(moves.get(movesCounter - 1).getBeforeMove().getLng(),
 					moves.get(movesCounter - 1).getBeforeMove().getLat()));
 			points.add(Point.fromLngLat(moves.get(movesCounter - 1).getAfterMove().getLng(),
 					moves.get(movesCounter - 1).getAfterMove().getLat()));
 
-			currentPoint = newDifference.getEstimatedPoint();
+			currentPoint = newDifference.source.getEstimatedPoint();
 
-			if (distance(currentPoint, fromSensorToPoint(newDifference.getGoal())) < 0.0002) {
+			if (distance(currentPoint, Point.fromLngLat(newDifference.dest.getCoordinates().getLng(),
+					newDifference.dest.getCoordinates().getLat())) < 0.0002) {
 				// System.out.println(newDifference.dest.location + " " +
 				// newDifference.dest.reading);
-				moves.get(movesCounter - 1).addLocation(newDifference.getGoal().getLocation());
-				var temporary = Feature.fromGeometry(Point.fromLngLat(newDifference.getGoal().getCoordinates().getLng(),
-						newDifference.getGoal().getCoordinates().getLat()));
-				temporary.addStringProperty("location", newDifference.getGoal().getLocation());
-				if (newDifference.getGoal().getReading() != null) {
-					if (newDifference.getGoal().getBattery() < 10.0) {
+				moves.get(movesCounter - 1).addLocation(newDifference.dest.getLocation());
+				var temporary = Feature.fromGeometry(Point.fromLngLat(newDifference.dest.getCoordinates().getLng(),
+						newDifference.dest.getCoordinates().getLat()));
+				temporary.addStringProperty("location", newDifference.dest.getLocation());
+				if (newDifference.dest.getReading() != null) {
+					if (newDifference.dest.getBattery() < 10.0) {
 						temporary.addStringProperty("rgb-string", "#000000");
 						temporary.addStringProperty("marker-color", "#000000");
 						temporary.addStringProperty("marker-symbol", "cross");
-					} else if (newDifference.getGoal().getReading().contains("n") == false) {
-						addAttributes(temporary, Double.parseDouble(newDifference.getGoal().getReading()));
+					} else if (newDifference.dest.getReading().contains("n") == false) {
+						addAttributes(temporary, Double.parseDouble(newDifference.dest.getReading()));
 					}
 				}
 				if (empty == false) {
 					features1.add(temporary);
 				}
-				listOfEntries.remove(newDifference.getGoal());
-				visitedPoints.add(newDifference.getGoal());
+				listOfEntries.remove(newDifference.dest);
+				visitedPoints.add(newDifference.dest);
 			}
 
 			if (distance(currentPoint, startingPoint1) < 0.0003 && (listOfEntries.isEmpty() == true)) {
@@ -396,25 +410,17 @@ public class App {
 		// Problematic region, moving where is avoided as is with noFlyAreas, however
 		// the sensors that are in such region are fully accessible and are able to be
 		// read and analyzed
-		Point p1 = Point.fromLngLat(-3.186995, 55.945421);
-		Point p2 = Point.fromLngLat(-3.186753, 55.945096);
-		Point p3 = Point.fromLngLat(-3.186646, 55.945108);
-		Point p4 = Point.fromLngLat(-3.186753, 55.945228);
-		Point p5 = Point.fromLngLat(-3.186753, 55.945228);
-		Point p6 = Point.fromLngLat(-3.186689, 55.945303);
-		Point p7 = Point.fromLngLat(-3.186791, 55.945294);
-		Point p8 = Point.fromLngLat( -3.186898, 55.945436);
-		Point p9 = Point.fromLngLat(-3.186995, 55.945421);
+		Point p1 = Point.fromLngLat(-3.186872, 55.945270);
+		Point p2 = Point.fromLngLat(-3.186719, 55.945069);
+		Point p3 = Point.fromLngLat(-3.186627, 55.945090);
+		Point p4 = Point.fromLngLat(-3.1867566, 55.945285);
+		Point p5 = Point.fromLngLat(-3.186872, 55.945270);
 		var listOfP = new ArrayList<Point>();
 		listOfP.add(p1);
 		listOfP.add(p2);
 		listOfP.add(p3);
 		listOfP.add(p4);
 		listOfP.add(p5);
-		listOfP.add(p6);
-		listOfP.add(p7);
-		listOfP.add(p8);
-		listOfP.add(p9);
 		var feature = Feature.fromGeometry(Polygon.fromLngLats(List.of(listOfP)));
 		errorRegion = FeatureCollection.fromFeature(feature);
 
@@ -456,18 +462,13 @@ public class App {
 
 		var moves = new ArrayList<Move>();
 		var features = new ArrayList<Feature>();
-		var result = new MovesAndPoints();
 		
 		// Execute algorithm
-		// var result = algorithm(startingPoint, confinementArea, listOfEntries, noFlyAreas);
+		var result = algorithm(startingPoint, confinementArea, listOfEntries, noFlyAreas);
 
-		// Trying for find alternative route if no route with less then 150 moves is found
+		// Trying for find alternative route
 		while (isFinished == false && controlBit < 360) {
 			result = algorithm(startingPoint, confinementArea, listOfEntries, noFlyAreas);
-		}
-		if (controlBit == 360) {
-			System.out.println("Could not find a valid path. Exiting");
-			System.exit(404);
 		}
 
 		features = result.getFeatures();

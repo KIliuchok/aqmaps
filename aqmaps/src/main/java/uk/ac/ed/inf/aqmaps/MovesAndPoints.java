@@ -15,7 +15,7 @@ public class MovesAndPoints {
 	}
 	
 	public MovesAndPoints() {
-
+		
 	}
 	
 	public ArrayList<Move> getMoves(){
