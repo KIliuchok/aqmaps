@@ -349,17 +349,25 @@ public class App {
 		 * the sensors that are in such region are fully accessible and are able to be
 		 * read and analyzed
 		 */
-		Point p1 = Point.fromLngLat(-3.186872, 55.945270);
-		Point p2 = Point.fromLngLat(-3.186719, 55.945069);
-		Point p3 = Point.fromLngLat(-3.186627, 55.945090);
-		Point p4 = Point.fromLngLat(-3.1867566, 55.945285);
-		Point p5 = Point.fromLngLat(-3.186872, 55.945270);
+		Point p1 = Point.fromLngLat(-3.186995, 55.945421);
+		Point p2 = Point.fromLngLat(-3.186753, 55.945096);
+		Point p3 = Point.fromLngLat(-3.186646, 55.945108);
+		Point p4 = Point.fromLngLat(-3.186753, 55.945228);
+		Point p5 = Point.fromLngLat(-3.186753, 55.945228);
+		Point p6 = Point.fromLngLat(-3.186689, 55.945303);
+		Point p7 = Point.fromLngLat(-3.186791, 55.945294);
+		Point p8 = Point.fromLngLat( -3.186898, 55.945436);
+		Point p9 = Point.fromLngLat(-3.186995, 55.945421);
 		var listOfP = new ArrayList<Point>();
 		listOfP.add(p1);
 		listOfP.add(p2);
 		listOfP.add(p3);
 		listOfP.add(p4);
 		listOfP.add(p5);
+		listOfP.add(p6);
+		listOfP.add(p7);
+		listOfP.add(p8);
+		listOfP.add(p9);
 		var feature = Feature.fromGeometry(Polygon.fromLngLats(List.of(listOfP)));
 		errorRegion = FeatureCollection.fromFeature(feature);
 
