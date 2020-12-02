@@ -125,6 +125,8 @@ public class App {
 	public static double distance(Point a, Point b) {
 		return Math.sqrt(Math.pow(a.longitude() - b.longitude(), 2) + Math.pow(a.latitude() - b.latitude(), 2));
 	}
+	
+	// Push test
 
 	@SuppressWarnings("unchecked")
 	private static MovesAndPoints algorithm(Point startingPoint1, Polygon workingArea,
