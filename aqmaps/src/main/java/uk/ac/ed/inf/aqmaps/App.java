@@ -62,7 +62,9 @@ public class App {
 		return false;
 	}
 
-	private static void addAttributes(Feature feature, float reading) {
+	private static void addAttributes(Feature feature, float reading, String location) {
+		feature.addStringProperty("marker-size", "medium");
+		feature.addStringProperty("location", location);
 		if ((reading >= 0) && (reading < 32)) {
 			addColourAttribute(feature, "#00ff00");
 			feature.addStringProperty("marker-symbol", "lighthouse");
@@ -90,7 +92,7 @@ public class App {
 		} else {
 			addColourAttribute(feature, "#aaaaaa");
 		}
-		feature.addStringProperty("marker-size", "medium");
+		
 	}
 
 	private static void addColourAttribute(Feature feature, String colour) {
@@ -151,7 +153,7 @@ public class App {
 				addColourAttribute(analyzedSensor, "#000000");
 				analyzedSensor.addStringProperty("marker-symbol", "cross");
 			} else {
-				addAttributes(analyzedSensor, Float.parseFloat(sensor.getReading()));
+				addAttributes(analyzedSensor, Float.parseFloat(sensor.getReading()), sensor.getLocation());
 			}
 		}
 		return analyzedSensor;
