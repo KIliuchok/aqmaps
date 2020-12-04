@@ -1,12 +1,12 @@
 package uk.ac.ed.inf.aqmaps;
 
 public class Coordinates {
-	private double latitude;
 	private double longitude;
+	private double latitude;
 
-	public Coordinates(double lng, double lat) {
-		this.longitude = lng;
-		this.latitude = lat;
+	public Coordinates(double longitude, double latitude) {
+		this.longitude = longitude;
+		this.latitude = latitude;
 	}
 
 	public double getLat() {
@@ -16,6 +16,5 @@ public class Coordinates {
 	public double getLng() {
 		return longitude;
 	}
-	
-		
+
 }

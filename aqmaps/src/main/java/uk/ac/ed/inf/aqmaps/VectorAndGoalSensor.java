@@ -1,18 +1,18 @@
 package uk.ac.ed.inf.aqmaps;
 
 public class VectorAndGoalSensor {
-	private Vector sourceLine;
+	private Vector sourceVector;
 	private Sensor destinationSensor;
 	private double distance;
 
-	public VectorAndGoalSensor(Vector line, Sensor sensor, double dist) {
-		this.sourceLine = line;
+	public VectorAndGoalSensor(Vector vector, Sensor sensor, double distance) {
+		this.sourceVector = vector;
 		this.destinationSensor = sensor;
-		this.distance = dist;
+		this.distance = distance;
 	}
 
-	public Vector getSourceLine() {
-		return sourceLine;
+	public Vector getSourceVector() {
+		return sourceVector;
 	}
 
 	public Sensor getDestinationSensor() {

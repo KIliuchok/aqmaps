@@ -6,6 +6,8 @@ public class Sensor {
 	private String location;
 	private float battery;
 	private String reading;
+	private double latitude;
+	private double longitude;
 
 	public String getLocation() {
 		return location;
@@ -19,24 +21,21 @@ public class Sensor {
 		return reading;
 	}
 
-	private double lat;
-	private double lng;
-
 	public void setLat(double lat) {
-		this.lat = lat;
+		this.latitude = lat;
 	}
 
 	public void setLng(double lng) {
-		this.lng = lng;
+		this.longitude = lng;
 	}
 
 	public Coordinates getCoordinates() {
-		var coordinates = new Coordinates(lng, lat);
+		var coordinates = new Coordinates(longitude, latitude);
 		return coordinates;
 	}
 
 	public Sensor(Point point) {
-		this.lat = point.latitude();
-		this.lng = point.longitude();
+		this.latitude = point.latitude();
+		this.longitude = point.longitude();
 	}
 }

@@ -6,6 +6,12 @@ public class Move {
 	private Coordinates afterMove;
 	private String location;
 	private int direction;
+	
+	public Move(int moveNumber, Coordinates beforeMove, Coordinates afterMove) {
+		this.moveNumber = moveNumber;
+		this.beforeMove = beforeMove;
+		this.afterMove = afterMove;
+	}
 
 	public Coordinates getBeforeMove() {
 		return beforeMove;
@@ -25,12 +31,6 @@ public class Move {
 
 	public int getDirection() {
 		return direction;
-	}
-
-	public Move(int moveNumber, Coordinates b, Coordinates c) {
-		this.moveNumber = moveNumber;
-		this.beforeMove = b;
-		this.afterMove = c;
 	}
 
 	public void addLocation(String loc) {

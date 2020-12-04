@@ -12,8 +12,6 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 
-import com.mapbox.turf.*;
-
 import java.util.*;
 
 public class App {
@@ -29,6 +27,8 @@ public class App {
 
 	// Initialize control variables
 	private static FeatureCollection errorRegion;
+	private static Polygon confinementArea;
+	private static FeatureCollection noFlyAreas;
 	// Control bias is essentially a direction where to move the starting point as a first move
 	private static int startingBias = 0;
 	// Flag which signifies if a valid path has been found
@@ -38,7 +38,7 @@ public class App {
 	 * Using JTS Library to check if provided geometry object intersects any of the
 	 * geometry objects in provided FeatureCollection
 	 */
-	public static boolean isTouches(LineString line, FeatureCollection fc) {
+	private static boolean isTouches(LineString line, FeatureCollection fc) {
 		GeoJSONReader reader = new GeoJSONReader();
 		org.locationtech.jts.geom.Geometry jtsLine = reader.read(line.toJson());
 		for (Feature feature : fc.features()) {
@@ -50,7 +50,7 @@ public class App {
 		return false;
 	}
 
-	public static boolean isTouches(Point point, FeatureCollection fc) {
+	private static boolean isTouches(Point point, FeatureCollection fc) {
 		GeoJSONReader reader = new GeoJSONReader();
 		org.locationtech.jts.geom.Geometry jtsPoint = reader.read(point.toJson());
 		for (Feature feature : fc.features()) {
@@ -62,7 +62,7 @@ public class App {
 		return false;
 	}
 
-	public static Feature addAttributes(Feature feature, float reading) {
+	private static void addAttributes(Feature feature, float reading) {
 		if ((reading >= 0) && (reading < 32)) {
 			addColourAttribute(feature, "#00ff00");
 			feature.addStringProperty("marker-symbol", "lighthouse");
@@ -91,34 +91,35 @@ public class App {
 			addColourAttribute(feature, "#aaaaaa");
 		}
 		feature.addStringProperty("marker-size", "medium");
-		return feature;
 	}
 
-	public static void addColourAttribute(Feature feature, String colour) {
+	private static void addColourAttribute(Feature feature, String colour) {
 		feature.addStringProperty("rgb-string", colour);
 		feature.addStringProperty("marker-color", colour);
 	}
 
-	public static Point getPointFromSensor(Sensor sensor) {
+	// Convert sensor coordinates to a Point object
+	private static Point getPointFromSensor(Sensor sensor) {
 		return Point.fromLngLat(sensor.getCoordinates().getLng(), sensor.getCoordinates().getLat());
 	}
 
-	public static double distance(Point a, Point b) {
+	// Distance between two points
+	private static double distance(Point a, Point b) {
 		return Math.sqrt(Math.pow(a.longitude() - b.longitude(), 2) + Math.pow(a.latitude() - b.latitude(), 2));
 	}
 
-	public static Point estimatePoint(Point currentPoint, int degrees) {
-		var point = Point.fromLngLat(currentPoint.longitude() + MOVE_LENGTH * Math.cos(Math.toRadians(degrees)),
-				currentPoint.latitude() + MOVE_LENGTH * Math.sin(Math.toRadians(degrees)));
+	// Estimate a point given a direction and origin
+	private static Point estimatePoint(Point currentPoint, int direction) {
+		var point = Point.fromLngLat(currentPoint.longitude() + MOVE_LENGTH * Math.cos(Math.toRadians(direction)),
+				currentPoint.latitude() + MOVE_LENGTH * Math.sin(Math.toRadians(direction)));
 		return point;
 	}
 
 	// Creates a valid directional vector
-	public static Vector createVectorWithChecks(Point origin, int direction, Polygon confinementArea,
-			FeatureCollection noFlyAreas) {
+	private static Vector createValidVector(Point origin, int direction) {
 		var estimatedPoint = estimatePoint(origin, direction);
 		// Check if the estimated point is in the confinement area
-		if (TurfJoins.inside(estimatedPoint, confinementArea) == false) {
+		if (isTouches(estimatedPoint, FeatureCollection.fromFeature(Feature.fromGeometry(confinementArea))) == false) {
 			return null;
 		}
 		// Create a LineString and check if it touches any of the forbidden areas
@@ -128,34 +129,35 @@ public class App {
 		if (isTouches(LineString.fromLngLats(pointsForLineString), noFlyAreas)) {
 			return null;
 		}
-		if (isTouches(LineString.fromLngLats(pointsForLineString), errorRegion)) {
+		if (isTouches(estimatedPoint, errorRegion)) {
 			return null;
 		}
 		var vector = new Vector(direction, origin, estimatedPoint);
 		return vector;
 	}
 
-	public static boolean isSensorInRange(Point currentPosition, Sensor sensor) {
+	// Check if the sensor is close to a point
+	private static boolean isSensorInRange(Point currentPosition, Sensor sensor) {
 		if (distance(currentPosition, getPointFromSensor(sensor)) < 0.0002) {
 			return true;
 		}
 		return false;
 	}
 
-	public static Feature analyzeSensor(Sensor sensor) {
+	private static Feature analyzeSensor(Sensor sensor) {
 		var analyzedSensor = Feature.fromGeometry(getPointFromSensor(sensor));
 		if (sensor.getReading() != null) {
 			if (sensor.getBattery() < 10.0) {
 				addColourAttribute(analyzedSensor, "#000000");
 				analyzedSensor.addStringProperty("marker-symbol", "cross");
-			} else if (sensor.getReading().contains("n") == false) {
+			} else {
 				addAttributes(analyzedSensor, Float.parseFloat(sensor.getReading()));
 			}
 		}
 		return analyzedSensor;
 	}
 
-	public static Feature createPath(ArrayList<Move> moves) {
+	private static Feature createPath(ArrayList<Move> moves) {
 		var tempListOfVisitedPoints = new ArrayList<Point>();
 		var startPoint = Point.fromLngLat(moves.get(0).getBeforeMove().getLng(), moves.get(0).getBeforeMove().getLat());
 		tempListOfVisitedPoints.add(startPoint);
@@ -168,16 +170,18 @@ public class App {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static MovesAndPoints algorithm(Point originalStartingPoint, Polygon workingArea,
-			ArrayList<Sensor> originallistOfEntries, FeatureCollection noFlyAreas) {
+	private static MovesAndPoints algorithm(Point originalStartingPoint, ArrayList<Sensor> originallistOfEntries) {
+		// 
 		int movesCounter = 1;
 		Point currentPoint;
 		boolean reachedBack = false;
 		var moves = new ArrayList<Move>();
 		var features = new ArrayList<Feature>();
 		var listOfEntries = new ArrayList<Sensor>();
+		
+		// Clone the original list of entries to prevent other rising issues if the
+		// first pass of the algorithm didn't manage to give result
 		listOfEntries = (ArrayList<Sensor>) originallistOfEntries.clone();
-		var last4Moves = new Move[4];
 		// Signifies that the initial list with sensors to visit is empty
 		boolean emptyFlag = false;
 
@@ -189,16 +193,7 @@ public class App {
 				var result = new MovesAndPoints(moves, features);
 				isFinished = false;
 				return result;
-			} else {
-				moves.add(new Move(movesCounter,
-						new Coordinates(originalStartingPoint.longitude(), originalStartingPoint.latitude()),
-						new Coordinates(currentPoint.longitude(), currentPoint.latitude())));
-				last4Moves[1] = new Move(movesCounter,
-						new Coordinates(originalStartingPoint.longitude(), originalStartingPoint.latitude()),
-						new Coordinates(currentPoint.longitude(), currentPoint.latitude()));
-				movesCounter += 1;
 			}
-
 		} else {
 			currentPoint = originalStartingPoint;
 		}
@@ -208,35 +203,35 @@ public class App {
 			// possible
 			List<Vector> listOfLines = new LinkedList<Vector>();
 			for (int i = 0; i <= 90; i += 10) {
-				var vector = createVectorWithChecks(currentPoint, i, workingArea, noFlyAreas);
+				var vector = createValidVector(currentPoint, i);
 				if (vector == null) {
 					continue;
 				}
 				listOfLines.add(vector);
 			}
 			for (int i = 100; i <= 180; i += 10) {
-				var vector = createVectorWithChecks(currentPoint, i, workingArea, noFlyAreas);
+				var vector = createValidVector(currentPoint, i);
 				if (vector == null) {
 					continue;
 				}
 				listOfLines.add(vector);
 			}
 			for (int i = 190; i < 280; i += 10) {
-				var vector = createVectorWithChecks(currentPoint, i, workingArea, noFlyAreas);
+				var vector = createValidVector(currentPoint, i);
 				if (vector == null) {
 					continue;
 				}
 				listOfLines.add(vector);
 			}
 			for (int i = 280; i <= 350; i += 10) {
-				var vector = createVectorWithChecks(currentPoint, i, workingArea, noFlyAreas);
+				var vector = createValidVector(currentPoint, i);
 				if (vector == null) {
 					continue;
 				}
 				listOfLines.add(vector);
 			}
 
-			// For each directional line and for each sensor create a "line with goal
+			// For each directional line and for each unused sensor create a "line with goal
 			// sensor" object
 			List<List<VectorAndGoalSensor>> listOfLists = new ArrayList<List<VectorAndGoalSensor>>();
 			for (Sensor sensorData : listOfEntries) {
@@ -264,22 +259,21 @@ public class App {
 			// Get the position values of current and estimated point as Coordinates object
 			var coordinatesForCurrentPoint = new Coordinates(currentPoint.longitude(), currentPoint.latitude());
 			var coordinatesForEstimatedPoint = new Coordinates(
-					lineWithSmallestDistance.getSourceLine().getTargetPoint().longitude(),
-					lineWithSmallestDistance.getSourceLine().getTargetPoint().latitude());
+					lineWithSmallestDistance.getSourceVector().getTargetPoint().longitude(),
+					lineWithSmallestDistance.getSourceVector().getTargetPoint().latitude());
 
 			// Create a move entry
 			var move = new Move(movesCounter, coordinatesForCurrentPoint, coordinatesForEstimatedPoint);
-			move.addDirection(lineWithSmallestDistance.getSourceLine().getDirection());
+			move.addDirection(lineWithSmallestDistance.getSourceVector().getDirection());
 			moves.add(move);
 
 			// Update the current point for the next loop
-			currentPoint = lineWithSmallestDistance.getSourceLine().getTargetPoint();
+			currentPoint = lineWithSmallestDistance.getSourceVector().getTargetPoint();
 
 			// If sensor is in range, analyze it and remove it from the initial list of entries
 			if (isSensorInRange(currentPoint, lineWithSmallestDistance.getDestinationSensor())) {
 				// Add location field to the move
 				moves.get(movesCounter - 1).addLocation(lineWithSmallestDistance.getDestinationSensor().getLocation());
-
 				var analyzedSensor = analyzeSensor(lineWithSmallestDistance.getDestinationSensor());
 				// To prevent the initial starting position from appearing in the final readings
 				// file
@@ -324,7 +318,7 @@ public class App {
 			}
 
 		}
-		return new MovesAndPoints(moves, features);
+		return new MovesAndPoints(moves, features);	
 	}
 
 	public static void main(String[] args) {
@@ -335,7 +329,8 @@ public class App {
 		confinementAreaPoints.add(SOUTH_EAST);
 		confinementAreaPoints.add(SOUTH_WEST);
 		confinementAreaPoints.add(NORTH_WEST);
-		Polygon confinementArea = Polygon.fromLngLats(List.of(confinementAreaPoints));
+		// Update the class variable
+		confinementArea = Polygon.fromLngLats(List.of(confinementAreaPoints));
 
 		// Name passed arguments
 		Point startingPoint = Point.fromLngLat(Double.parseDouble(args[4]), Double.parseDouble(args[3]));
@@ -345,34 +340,25 @@ public class App {
 		String port = args[6];
 
 		/*
-		 * Problematic region, moving where is avoided as is with noFlyAreas, however
+		 * Problematic region, estimating points where is avoided, however
 		 * the sensors that are in such region are fully accessible and are able to be
 		 * read and analyzed
 		 */
-		Point p1 = Point.fromLngLat(-3.186995, 55.945421);
-		Point p2 = Point.fromLngLat(-3.186753, 55.945096);
-		Point p3 = Point.fromLngLat(-3.186646, 55.945108);
-		Point p4 = Point.fromLngLat(-3.186753, 55.945228);
-		Point p5 = Point.fromLngLat(-3.186753, 55.945228);
-		Point p6 = Point.fromLngLat(-3.186689, 55.945303);
-		Point p7 = Point.fromLngLat(-3.186791, 55.945294);
-		Point p8 = Point.fromLngLat( -3.186898, 55.945436);
-		Point p9 = Point.fromLngLat(-3.186995, 55.945421);
 		var listOfP = new ArrayList<Point>();
-		listOfP.add(p1);
-		listOfP.add(p2);
-		listOfP.add(p3);
-		listOfP.add(p4);
-		listOfP.add(p5);
-		listOfP.add(p6);
-		listOfP.add(p7);
-		listOfP.add(p8);
-		listOfP.add(p9);
+		listOfP.add(Point.fromLngLat(-3.186995, 55.945421));
+		listOfP.add(Point.fromLngLat(-3.186753, 55.945096));
+		listOfP.add(Point.fromLngLat(-3.186646, 55.945108));
+		listOfP.add(Point.fromLngLat(-3.186753, 55.945228));
+		listOfP.add(Point.fromLngLat(-3.186753, 55.945228));
+		listOfP.add(Point.fromLngLat(-3.186689, 55.945303));
+		listOfP.add(Point.fromLngLat(-3.186791, 55.945294));
+		listOfP.add(Point.fromLngLat( -3.186898, 55.945436));
+		listOfP.add(Point.fromLngLat(-3.186995, 55.945421));
 		var feature = Feature.fromGeometry(Polygon.fromLngLats(List.of(listOfP)));
 		errorRegion = FeatureCollection.fromFeature(feature);
 
 		// Check if the starting position is within the confinement area
-		if (TurfJoins.inside(startingPoint, confinementArea) == false) {
+		if (isTouches(startingPoint, FeatureCollection.fromFeature(Feature.fromGeometry(confinementArea))) == false) {
 			System.out.println("Error: Starting Point is defined not in the working area. Exiting program now");
 			System.exit(69);
 		}
@@ -386,10 +372,10 @@ public class App {
 		ArrayList<Sensor> listOfEntries = new Gson().fromJson(NetworkOperations.readFileToString(urlStringForPoints),
 				listType);
 
-		// Read the no fly areas and store in collection noFlyAreas
+		// Read the no fly areas and update them to class variable
 		String urlStringNoFly = "http://localhost:" + port + "/buildings/no-fly-zones.geojson";
 		System.out.println("No-fly zones were read from the Network");
-		var noFlyAreas = FeatureCollection.fromJson(NetworkOperations.readFileToString(urlStringNoFly));
+		noFlyAreas = FeatureCollection.fromJson(NetworkOperations.readFileToString(urlStringNoFly));
 
 		// Check if the starting point is inside the no Fly Area
 		if (isTouches(startingPoint, noFlyAreas)) {
@@ -412,11 +398,11 @@ public class App {
 		var features = new ArrayList<Feature>();
 
 		// Execute algorithm
-		var result = algorithm(startingPoint, confinementArea, listOfEntries, noFlyAreas);
+		var result = algorithm(startingPoint, listOfEntries);
 
 		// Trying for find alternative route if the first run was not successful
 		while (isFinished == false) {
-			result = algorithm(startingPoint, confinementArea, listOfEntries, noFlyAreas);
+			result = algorithm(startingPoint, listOfEntries);
 		}
 		
 		// retrieve the features (Points) and the moves from the algorithm result
@@ -432,7 +418,7 @@ public class App {
 			e.printStackTrace();
 		}
 		
-		// Save the flightpath
+		// Save the flight path
 		try {
 			String fileName = String.format("flightpath-%s-%s-%s.txt", dateDay, dateMonth, dateYear);
 			IOOperations.writeMovesToFile(moves, fileName);
